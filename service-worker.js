@@ -8,13 +8,11 @@ var allCaches = [
 var staticFilesToCache = [
   '/currency-converter/',
   '/currency-converter/index.html',
-  '/currency-converter/src/images',
   '/currency-converter/src/js/jquery.min.js',
   '/currency-converter/src/js/app.js',
   '/currency-converter/src/js/localforage.js',
   '/currency-converter/src/css/materialize.min.css',
   '/currency-converter/src/js/materialize.min.js',
-  '/currency-converter/src/images/',
   '/currency-converter/favicon.ico',
 ];
 //
