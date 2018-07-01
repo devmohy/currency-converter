@@ -10,7 +10,7 @@
       "sizes": "96x96",
       "type": "image/png"
     }, {
-      "src": "/src/images/icons/icon-32x32.png",
+      "src": "/currency-converter/src/images/icons/icon-32x32.png",
       "sizes": "96x96",
       "type": "image/png"
     }, {
@@ -18,7 +18,7 @@
       "sizes": "96x96",
       "type": "image/png"
     },{
-      "src": "/src/images/icons/icon-120x120.png",
+      "src": "/currency-converter//src/images/icons/icon-120x120.png",
       "sizes": "128x128",
       "type": "image/png"
     }, {
@@ -36,6 +36,6 @@
     }],
   "start_url": "/currency-converter/index.html",
   "display": "standalone",
-  "background_color": "#E91E63",
-  "theme_color": "#E91E63"
+  "background_color": "#009688",
+  "theme_color": "#009688"
 }
