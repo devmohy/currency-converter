@@ -8,13 +8,12 @@ var allCaches = [
 var staticFilesToCache = [
   '/',
   '/index.html',
-  '/src/css/select2.min.css',
+  '/src/images/',
   '/src/js/jquery.min.js',
   '/src/js/app.js',
   '/src/js/localforage.js',
   '/src/css/materialize.min.css',
   '/src/js/materialize.min.js',
-  '/src/js/select2.full.min.js',
   '/favicon.ico',
 ];
 //
