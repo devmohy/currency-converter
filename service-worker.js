@@ -1,4 +1,4 @@
-//service worker
+//service worker 
 var staticCacheName = 'currency-static-v1';
 
 var allCaches = [
@@ -8,15 +8,16 @@ var allCaches = [
 var staticFilesToCache = [
   '/',
   '/index.html',
-  '/src/css/style.css',
+  '/src/css/select2.min.css',
   '/src/js/jquery.min.js',
   '/src/js/app.js',
   '/src/js/localforage.js',
   '/src/css/materialize.min.css',
   '/src/js/materialize.min.js',
+  '/src/js/select2.full.min.js',
   '/favicon.ico',
 ];
-///SSSSSSSS
+//
 self.addEventListener('install', function(e) {
   console.log('[ServiceWorker] Install');
   e.waitUntil(
@@ -45,6 +46,27 @@ self.addEventListener('activate', function(event) {
 
 
 self.addEventListener('fetch', function(event) {
+  const responseUrl = new URL(event.request.url);
+
+  if(responseUrl.origin != location.origin){
+    console.log(responseUrl);
+    if(responseUrl.pathname.endsWith('currencies')){
+      const storageUrl = event.request.url.slice(8).split('/')[3]; //currencies?
+      event.respondWith(
+        caches.open('currencyList').then(function(cache) {
+          return cache.match(storageUrl).then(function (response) {
+            return response || fetch(event.request).then(function(response) {
+              cache.put(storageUrl, response.clone());
+              return response;
+            });
+          });
+        })
+
+      );
+      return
+    }
+  }
+
   event.respondWith(
     caches.match(event.request).then(function(response) {
       if (response) return response;
@@ -54,6 +76,7 @@ self.addEventListener('fetch', function(event) {
       });
     })
   );
+
 });
 
 self.addEventListener('message', function(event) {
