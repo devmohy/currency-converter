@@ -4,10 +4,11 @@
   /*==================================================================
   Global variables used across
   ==================================================================*/
-  const currencyAPIUrlBase = 'https://';
+  const currencyAPIUrlBase = 'https://free.currencyconverterapi.com/api/v5/';
   const currency_list = '';
   const convertBtn = $('#convertbtn'), amountInp = $('#amount'), 
-  fromDrp = $('#from_drp'), toDrp = $('#to_drp'), resultView = $('.result');
+  fromDrp = $('#from_drp'), toDrp = $('#to_drp'), 
+  resultView = $('p.result b'), checkBtn = $('#checkbtn');
   let app = {
     currencyList : {},
   };
@@ -71,7 +72,7 @@
     return {
       getCurrencyList: ()=>{
         return new Promise((resolve,reject)=>{
-          fetch('https://free.currencyconverterapi.com/api/v5/currencies?').then((response)=>{
+          fetch(`${currencyAPIUrlBase}currencies?`).then((response)=>{
             response.json().then((data)=>{
                 if(data){
                   resolve(data.results);
@@ -84,7 +85,7 @@
       },
       convertCurrency: (from,to)=>{
         return new Promise((resolve,reject)=>{
-          fetch(`https://free.currencyconverterapi.com/api/v5/convert?q=${from}_${to}&compact=ultra`).then((response)=>{
+          fetch(`${currencyAPIUrlBase}convert?q=${from}_${to}&compact=ultra`).then((response)=>{
             response.json().then((data)=>{
                 resolve(data);
               });
@@ -93,6 +94,17 @@
           });
         });
       },
+      historicalData: (from,to,date)=>{
+        return new Promise((resolve,reject)=>{
+          fetch(`${currencyAPIUrlBase}convert?q=${from}_${to}&compact=ultra&date=${date}`).then((response)=>{
+            response.json().then((data)=>{
+                resolve(data);
+              });
+          }).catch((e)=> {
+              reject(e.message);
+          });
+        });
+      }
     }
   }
   /*end currency api functions====================================*/
@@ -105,8 +117,8 @@
   app.displayList = (lists)=>{
     let htmlstr = '';
     for(let item of Object.keys(lists).sort()){
-      let { currencyName } = lists[item];
-      let opt = `<option value="${item}">${item} ( ${currencyName} )</option>`;
+      let { currencyName, currencySymbol } = lists[item];
+      let opt = `<option value="${item}" data-symbol="${currencySymbol}">${item} ( ${currencyName} )</option>`;
       htmlstr += opt;
     }
     $('select').html(htmlstr);
@@ -150,7 +162,13 @@
       }
     });
   }
+
+  app.formatDate = (date)=>{
+    const d = new Date(date);
+    return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`
+  }
   
+
 app.convertLocal = (key)=>{
   const errMsg = 'Fetct fail: connect to internet';
   return new Promise((resolve,reject)=>{
@@ -171,68 +189,96 @@ app.convertLocal = (key)=>{
   
 }
 
+app.computeResult = (data,amount,symbol)=>{
+  console.log(data);
+  const key = Object.keys(data)[0];
+  const val = data[key];
+  //calculate rate
+  const result = parseFloat(amount) * parseFloat(val);
+
+  resultView.html(`${symbol} ${result}`);
+  //M.toast({html: `result: ${result}`});
+  convertBtn.html(`Convert`);
+}
+
   app.event = ()=>{
  
     convertBtn.on('click', function(){
       const amount = amountInp.val();
       const from = fromDrp.val();
       const to = toDrp.val();
+      const sym = toDrp.find('option:selected').data('symbol');
+      const symbol = (sym != 'undefined')? sym : to;
+
       if(amount.length == 0){
         //display error
         M.toast({html: 'Please specify amount!'});
         return;
       }
+      convertBtn.html(`Converting...`);
       app.Api().convertCurrency(from,to).then((data)=>{
-        console.log(data);
-        const key = Object.keys(data)[0];
-        const val = data[key];
-        //calculate rate
-        const result = parseFloat(amount) * parseFloat(val);
-        resultView.html(result);
-        M.toast({html: `result: ${result}`});
+        app.computeResult(data,amount,symbol);
         //save to loacal DB
         app.saveRate(data);
       }).catch((err)=>{
         const key = `${from}_${to}`;
         console.log(key);
         app.convertLocal(key).then((data)=>{
-        const key = Object.keys(data)[0];
-        const val = data[key];
-          //calculate rate
-        const result = parseFloat(amount) * parseFloat(val);
-        resultView.html(result);
-        M.toast({html: `result: ${result}`});
+          app.computeResult(data,amount,symbol);
         }).catch((err)=>{
+          convertBtn.html(`Convert`);
+          resultView.html(0.00);
           M.toast({html: `${err}`});
         })
       });
     });
- 
+    
+    checkBtn.on('click', function(){
+      const d = $('.datepicker').val();
+      const from = $('#from_drp2').val();
+      const to = $('#to_drp2').val();
+
+      if(d.length == 0){
+        //display error
+        M.toast({html: 'Please specify date!'});
+        return;
+      }
+      checkBtn.html(`Checking...`);
+      const date = app.formatDate(d);
+      app.Api().historicalData(from,to,date).then((data)=>{
+        const key = Object.keys(data)[0];
+        const dateObj = data[key];
+        const dateKey = Object.keys(dateObj)[0];
+        const rateValue = dateObj[dateKey];
+
+        console.log(key, rateValue);
+        const result = `1 of ${from} is equivalent to ${rateValue} of ${to} on ${d}`;
+        $('p.history.result b').html(result);
+        checkBtn.html(`Check`);
+      }).catch((err)=>{        
+        $('p.history.result b').html('');
+        checkBtn.html(`Check`);
+        M.toast({html: `${err}`});
+      });
+    });
   }
   /* app.init */
   app.init = ()=>{
     //call sw registration
     app.registerServiceWorker();
     //currency list check
-    window.localforage.getItem('currencyList', function(err, list) {
-      if (list) {
-        console.log('offline list ', list);
-        //display ui
-        app.displayList(list);
-      } else {        
-        app.Api().getCurrencyList().then((data)=>{
-          window.localforage.setItem('currencyList', data);
-          console.log('online list ', data);
-          //display ui
-          app.displayList(data);
-        });
-      }
+    app.Api().getCurrencyList().then((data)=>{
+      console.log('list ', data);
+      //display ui
+      app.displayList(data);
     });
   }
  
   document.addEventListener('DOMContentLoaded', function() {
     app.init();
     app.event();
+    $('.tabs').tabs();
+    $('.datepicker').datepicker();
   });
   
  })();
