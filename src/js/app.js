@@ -23,7 +23,7 @@
   app.registerServiceWorker = ()=>{
     if (!navigator.serviceWorker) return;
  
-    navigator.serviceWorker.register('currency-converter/service-worker.js').then((reg)=> {
+    navigator.serviceWorker.register('/currency-converter/service-worker.js').then((reg)=> {
       if (!navigator.serviceWorker.controller) {
         return;
       }
